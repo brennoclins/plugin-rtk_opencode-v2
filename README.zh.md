@@ -326,8 +326,8 @@ pnpm pack
 测试套件使用 `test/fixtures/fake-rtk.mjs` 中的假 RTK 二进制文件；运行测试不需要真实的 `rtk`。
 `prepare` 脚本会为基于 Git 的安装执行构建。
 
-发布由 GitHub Actions 中的 `release.yml` 工作流完成，并带有 npm provenance。
-`0.1.0` 及后续版本见
+发布由 GitHub Actions 中的 `release.yml` 工作流在每次推送到 `main` 时自动完成：
+它会递增版本、带 provenance 发布到 npm，并创建 GitHub Release。`0.1.0` 及后续版本见
 <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>。当前流程使用 npm
 granular token；计划于 2026-11-01 迁移到 Trusted Publishing（OIDC）。参见
 [CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md)。

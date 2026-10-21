@@ -2,20 +2,26 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
   id-token: write
 
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
 jobs:
   publish:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup pnpm
@@ -29,24 +35,6 @@ jobs:
           node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
-
-      - name: Verify tag matches package version
-        run: |
-          version="$(node -p "require('./package.json').version")"
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version $version." >&2
-            exit 1
-          fi
-
-      - name: Verify NPM_TOKEN is configured
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "NPM_TOKEN secret is not configured." >&2
-            echo "Add it under Settings > Secrets and variables > Actions." >&2
-            exit 1
-          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -66,12 +54,91 @@ jobs:
       - name: Verify package contents
         run: npm pack --dry-run
 
-      - name: Publish to npm
-        run: npm publish --access public --provenance
+      - name: Verify npm CLI supports publishing
+        run: |
+          npm --version
+          node -e "const {execSync}=require('node:child_process'); const v=execSync('npm --version').toString().trim(); const [major,minor]=v.split('.').map(Number); if (major < 11 || (major === 11 && minor < 5)) { console.error('npm >= 11.5.1 is required'); process.exit(1); }"
+
+      - name: Determine next version
+        id: version
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          pkg="plugin-rtk_opencode-v2"
+          current="$(node -p "require('./package.json').version")"
+
+          if npm view "$pkg@$current" version >/dev/null 2>&1; then
+            bump="patch"
+            message="$(git log -1 --pretty=%B)"
+
+            if printf '%s' "$message" | grep -qE '^[a-z]+(\([^)]*\))?!:'; then
+              bump="major"
+            elif printf '%s' "$message" | grep -q '^BREAKING CHANGE:'; then
+              bump="major"
+            elif printf '%s' "$message" | grep -qE '^feat(\([^)]*\))?:'; then
+              bump="minor"
+            fi
+
+            echo "Current version $current is published; bumping $bump." >&2
+            npm version "$bump" --no-git-tag-version
+          else
+            echo "Current version $current is not published yet; publishing it now." >&2
+          fi
+
+          version="$(node -p "require('./package.json').version")"
+          date="$(date -u +%F)"
+
+          if ! grep -qF "## [$version]" CHANGELOG.md; then
+            if grep -q '^## \[Unreleased\]' CHANGELOG.md; then
+              perl -0pi -e "s/## \[Unreleased\]/## [Unreleased]\n\n## [$version] - $date/" CHANGELOG.md
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain package.json CHANGELOG.md)" ]; then
+            git add package.json CHANGELOG.md
+            git commit -s -m "chore(release): v$VERSION [skip release]"
+          else
+            echo "No version changes to commit."
+          fi
+
+          if ! git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            git tag -a "v$VERSION" -m "v$VERSION"
+          fi
+
+          git push origin HEAD:main
+          git push origin "v$VERSION"
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if npm view "plugin-rtk_opencode-v2@$VERSION" version >/dev/null 2>&1; then
+            echo "Version $VERSION is already published; skipping npm publish."
+          else
+            npm publish --access public --provenance
+          fi
 
       - name: Create GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "GitHub release v$VERSION already exists."
+          else
+            gh release create "v$VERSION" --generate-notes --verify-tag
+          fi

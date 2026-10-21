@@ -363,8 +363,9 @@ A suíte de testes usa um binário RTK falso em `test/fixtures/fake-rtk.mjs`; o
 `rtk` real não é necessário para executar os testes. O script `prepare` executa
 o build em instalações via Git.
 
-As releases são publicadas pelo workflow `release.yml` no GitHub Actions com npm
-provenance. A versão `0.1.0` e as seguintes ficam em
+As releases são publicadas automaticamente pelo workflow `release.yml` no GitHub
+Actions a cada push na `main`: ele incrementa a versão, publica no npm com
+provenance e cria a release no GitHub. A versão `0.1.0` e as seguintes ficam em
 <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. O fluxo atual
 usa um token granular do npm; a migração para Trusted Publishing (OIDC) está
 planejada para 2026-11-01. Consulte

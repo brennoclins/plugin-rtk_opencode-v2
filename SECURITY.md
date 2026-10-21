@@ -39,8 +39,9 @@ executed differently than the agent requested, treat it as a security issue.
 
 ## Release integrity
 
-Published versions are built and published by the `release.yml` GitHub Actions
-workflow. The `0.1.0` release includes npm provenance
+Published versions are built and published automatically by the `release.yml`
+GitHub Actions workflow on every push to `main`, which bumps the version, tags
+the commit, and publishes to npm. The `0.1.0` release includes npm provenance
 (`slsa.dev/provenance/v1`) and is listed at
 <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases/tag/v0.1.0>.
 

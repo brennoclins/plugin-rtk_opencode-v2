@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Automatic releases: every push to `main` runs the `release.yml` workflow,
+  which bumps the version, publishes to npm with provenance, and creates the
+  matching GitHub Release. `feat:` commits bump minor, breaking changes bump
+  major, and everything else bumps patch.
+
 ### Changed
 
 - Documentation reviewed after the first public release: all four READMEs now

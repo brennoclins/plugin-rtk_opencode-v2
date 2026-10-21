@@ -365,11 +365,12 @@ La suite di test usa un binario RTK finto in `test/fixtures/fake-rtk.mjs`; il
 `rtk` reale non è necessario per eseguire i test. Lo script `prepare` esegue la
 build per le installazioni via Git.
 
-Le release sono pubblicate dal workflow `release.yml` in GitHub Actions con npm
-provenance. La versione `0.1.0` e le successive sono elencate in
-<https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. Il flusso
-attuale usa un token npm granulare; la migrazione a Trusted Publishing (OIDC) è
-prevista per il 2026-11-01. Vedi
+Le release sono pubblicate automaticamente dal workflow `release.yml` in GitHub
+Actions a ogni push su `main`: incrementa la versione, pubblica su npm con
+provenance e crea la release su GitHub. La versione `0.1.0` e le successive sono
+elencate in <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. Il
+flusso attuale usa un token npm granulare; la migrazione a Trusted Publishing
+(OIDC) è prevista per il 2026-11-01. Vedi
 [CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md).
 
 ## Compatibilità

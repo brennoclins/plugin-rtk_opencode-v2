@@ -39,11 +39,14 @@ The first public release, `0.1.0`, is available on npm:
 `release.yml` workflow with npm provenance, and the matching GitHub Release is
 `v0.1.0`.
 
-Releases are published from the `release.yml` workflow when a `v*` tag is
-pushed. The workflow runs lint, typecheck, tests, build, `npm pack --dry-run`,
-`npm publish --access public --provenance`, and creates the GitHub release. The
-tag must match the `package.json` version (for example, tag `v0.1.0` for version
-`0.1.0`).
+Releases are published automatically by the `release.yml` workflow on every push
+to `main`. The workflow runs lint, typecheck, tests, build, and
+`npm pack --dry-run`, bumps the version (`patch` by default, `minor` for `feat:`
+commits, `major` for breaking changes), commits and tags the bump, publishes
+with `npm publish --access public --provenance`, and creates the matching GitHub
+Release. No manual version or tag step is required. If the current
+`package.json` version is not on npm yet, the workflow publishes it without
+bumping, so a failed publish recovers on the next push.
 
 The current workflow authenticates with the `NPM_TOKEN` repository secret: a
 granular npm token with publish access and bypass 2FA for automated publishing.
