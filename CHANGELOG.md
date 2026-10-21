@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The build now removes stale `dist` artifacts before compiling, keeping test
   and source files out of the published package.
 - Hook registrations are disposed when the plugin is cleaned up.
+- Local `npm publish` no longer fails with "Automatic provenance generation not
+  supported" because provenance is requested by the release workflow instead of
+  being forced in `publishConfig`.
 
 ## [0.1.0] - 2026-10-20
 

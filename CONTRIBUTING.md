@@ -37,7 +37,11 @@ source files, and configuration stay out of the tarball.
 Releases are published from the `release.yml` workflow when a `v*` tag is
 pushed. The workflow runs lint, typecheck, tests, build, `npm pack --dry-run`,
 `npm publish --provenance`, and creates the GitHub release. The `NPM_TOKEN`
-repository secret is required.
+repository secret is required, and the tag must match the `package.json`
+version (for example, tag `v0.1.0` for version `0.1.0`).
+
+Publishing locally with `npm publish` is possible without provenance; the
+provenance attestation is generated only by the GitHub Actions workflow.
 
 To test a local build as an OpenCode plugin, run `pnpm install && pnpm build`,
 then point a project configuration to the absolute package directory:
