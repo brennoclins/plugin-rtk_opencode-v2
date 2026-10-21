@@ -19,7 +19,7 @@ original command runs unchanged.
 ## Requirements
 
 - OpenCode V2 `>= 2.1.1`
-- Node.js `>= 20`
+- Node.js `>= 22.13`
 - [RTK](https://github.com/rtk-ai/rtk) `>= 0.27` available in `PATH` (or set
   `rtkPath`)
 
@@ -178,7 +178,7 @@ The test suite uses a fake RTK binary in `test/fixtures/fake-rtk.mjs`; the real
 
 - OpenCode V2 `2.1.1` and later (`@opencode/plugin@^2.1.1`)
 - RTK `0.27` and later, tested against `0.49.0`
-- Node.js `20`, `22`, and `24`
+- Node.js `22` and `24`
 
 OpenCode V1 is not supported. Use the original
 [`opencode-rtk`](https://www.npmjs.com/package/opencode-rtk) plugin for V1.

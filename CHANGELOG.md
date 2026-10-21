@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `@opencode/plugin` moved to `peerDependencies` and the GitHub repository
   metadata added for npm provenance.
 
+### Removed
+
+- Node.js 20 support. It reached end-of-life on 2026-04-30 and pnpm 11
+  requires Node.js 22.13 or newer; the supported range is now Node.js 22.13+
+  (validated on Node 22 and 24).
+
 ### Fixed
 
 - The build now removes stale `dist` artifacts before compiling, keeping test

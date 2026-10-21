@@ -4,7 +4,7 @@ Thanks for helping improve `plugin-rtk_opencode-v2`.
 
 ## Development setup
 
-Requirements: Node.js 20+ and pnpm 11.
+Requirements: Node.js 22.13+ and pnpm 11.
 
 ```bash
 pnpm install

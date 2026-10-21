@@ -18,7 +18,7 @@ echo hi             ->  echo hi
 ## 环境要求
 
 - OpenCode V2 `>= 2.1.1`
-- Node.js `>= 20`
+- Node.js `>= 22.13`
 - [RTK](https://github.com/rtk-ai/rtk) `>= 0.27`，并位于 `PATH` 中（或设置
   `rtkPath`）
 
@@ -163,7 +163,7 @@ pnpm build
 
 - OpenCode V2 `2.1.1` 及更高版本（`@opencode/plugin@^2.1.1`）
 - RTK `0.27` 及更高版本，已针对 `0.49.0` 测试
-- Node.js `20`、`22` 和 `24`
+- Node.js `22` 和 `24`
 
 不支持 OpenCode V1。V1 请使用原始
 [`opencode-rtk`](https://www.npmjs.com/package/opencode-rtk) 插件。

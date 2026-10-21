@@ -23,7 +23,7 @@
     "plugin"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "packageManager": "pnpm@11.7.0",
   "main": "./dist/index.js",
