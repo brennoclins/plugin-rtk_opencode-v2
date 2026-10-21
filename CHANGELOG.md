@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Concurrent identical rewrites now share a single `rtk` call.
 - `@opencode/plugin` moved to `peerDependencies` and the GitHub repository
   metadata added for npm provenance.
+- GitHub Actions updated to `checkout@v7`, `setup-node@v7`, and
+  `pnpm/action-setup@v6`; TypeScript updated to 7 and `@types/node` aligned with
+  the minimum supported Node.js 22.
 
 ### Removed
 
