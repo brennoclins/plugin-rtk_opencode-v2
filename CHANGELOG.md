@@ -1,0 +1,46 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Multilingual README with Brazilian Portuguese as the default, plus English,
+  Italian, and Simplified Chinese.
+
+### Changed
+
+- Stderr from `rtk rewrite` is now treated as diagnostics instead of a failure,
+  so a valid rewrite on stdout is still applied.
+- Commands involving privilege escalation (`sudo`, `doas`, `pkexec`, `runas`,
+  `gsudo`, `su`) and commands invoking `rtk` through absolute paths or wrappers
+  (`command`, `env`, `nohup`) are never rewritten.
+- Concurrent identical rewrites now share a single `rtk` call.
+- `@opencode/plugin` moved to `peerDependencies` and the GitHub repository
+  metadata added for npm provenance.
+
+### Fixed
+
+- The build now removes stale `dist` artifacts before compiling, keeping test
+  and source files out of the published package.
+- Hook registrations are disposed when the plugin is cleaned up.
+
+## [0.1.0] - 2026-10-20
+
+### Added
+
+- OpenCode V2 plugin that rewrites `bash` and `shell` tool commands through
+  `rtk rewrite` before execution.
+- Optional `ctx.shell.hook("create.before")` integration behind `useShellHook`.
+- Cached RTK availability probe with TTL and per-rewrite timeout.
+- Safe passthrough for missing binaries, timeouts, and empty output.
+- LRU cache for successful rewrites and skip rules for commands already using
+  RTK or exceeding `maxCommandLength`.
+- Configurable options with validation and defaults.
+- Test suite with a fake RTK binary, including timeout, stderr, and missing
+  binary scenarios.
+- GPL-3.0-or-later licensing, notices, and credits.

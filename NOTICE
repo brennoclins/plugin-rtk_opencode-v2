@@ -1,0 +1,20 @@
+plugin-rtk_opencode-v2
+Copyright (C) 2026 Brenno C. Lins
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
+
+This project is derived in part from the ideas and behavior of the MIT-licensed
+`opencode-rtk` plugin by Aris Ripandi. See THIRD_PARTY_NOTICES.md for details.
+
+RTK (Rust Token Killer) is an external program invoked by this plugin. It is not
+distributed with, linked into, or incorporated into this project.

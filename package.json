@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "plugin-rtk_opencode-v2",
+  "version": "0.1.0",
+  "description": "OpenCode V2 plugin that rewrites shell commands to RTK (Rust Token Killer) equivalents.",
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "author": "Brenno C. Lins <dev@bcl-st.com.br> (BCL-ST Developer)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brennoclins/plugin-rtk_opencode-v2.git"
+  },
+  "homepage": "https://github.com/brennoclins/plugin-rtk_opencode-v2#readme",
+  "bugs": {
+    "url": "https://github.com/brennoclins/plugin-rtk_opencode-v2/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "rtk",
+    "rust-token-killer",
+    "tokens",
+    "plugin"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.7.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.en.md",
+    "README.it.md",
+    "README.zh.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES.md",
+    "AUTHORS.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "pack": "pnpm build && npm pack"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@opencode/plugin": "^2.1.1"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "^2.1.1",
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.5",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
