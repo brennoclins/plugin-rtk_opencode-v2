@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Commands that invoke `npm`, `pnpm`, `yarn`, or `bun` are never rewritten,
+  including package-manager scripts and compound commands such as
+  `cd app && pnpm lint`. The script body is defined by the project, and RTK
+  could map `pnpm lint` to `rtk lint`, which runs ESLint even when the project
+  uses Biome or another linter.
+- All four READMEs now document the actual OpenCode V2 plugin cache location,
+  the current `0.1.1` version, the need to restart an already-running service or
+  session after `opencode plugin add`, and the package-manager skip rule.
+- Added an upstream report with a Linux reproduction for the RTK lint rewrite
+  issue, referencing the existing discussions instead of opening a duplicate.
+
+### Fixed
+
+- `pnpm lint` and `npm run lint` no longer fail with
+  `Command "eslint" not found` when the project's lint script does not use
+  ESLint.
+
 ## [0.1.1] - 2026-10-21
 
 ### Added

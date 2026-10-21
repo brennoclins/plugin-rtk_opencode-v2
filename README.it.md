@@ -33,8 +33,12 @@ dell'esecuzione e lascia che RTK faccia il lavoro.
 ```text
 git status                    ->  rtk git status
 rg "TODO" src                 ->  rtk rg "TODO" src
-pnpm tsc --noEmit             ->  rtk tsc --noEmit
+tsc --noEmit                  ->  rtk tsc --noEmit
 ```
+
+I comandi che richiamano `npm`, `pnpm`, `yarn` o `bun` non vengono modificati,
+compresi gli script come `pnpm lint`, perché il corpo dello script è definito dal
+progetto. Vedi [Come funziona](#come-funziona).
 
 Il guadagno dipende dal progetto e dal comando. RTK mantiene una cronologia
 locale dei risparmi; consultala con:
@@ -75,19 +79,23 @@ rtk --version
 ## Installazione
 
 Il plugin è un pacchetto npm pubblicato e caricato da OpenCode V2. La versione
-attuale è `0.1.0`:
+attuale è `0.1.1`:
 
 ```bash
 npm view plugin-rtk_opencode-v2 version
-# 0.1.0
+# 0.1.1
 ```
 
 **Non** è necessario eseguire `npm install` o `pnpm add`: OpenCode installa i
-pacchetti dichiarati nella configurazione usando Bun all'avvio e li memorizza
-nella cache in `~/.cache/opencode/node_modules/`.
+pacchetti dichiarati nella configurazione all'avvio e li memorizza nella cache
+in:
+
+```text
+~/.cache/opencode/npm/<pacchetto>@latest/<build>/node_modules/
+```
 
 > La versione `0.0.0-stage` è un placeholder della prima pubblicazione; `latest`
-> punta a `0.1.0`, la versione installata da OpenCode.
+> punta a `0.1.1`, la versione installata da OpenCode.
 
 ### Opzione 1 — CLI (consigliata)
 
@@ -146,13 +154,17 @@ Quando servono opzioni, usa la forma a oggetto:
 Alla prima esecuzione OpenCode scarica il pacchetto; è necessario l'accesso alla
 rete. Dopo, il pacchetto resta in cache e gli avvii successivi sono rapidi.
 
-OpenCode V2 ricarica automaticamente le configurazioni osservate e installa i
-pacchetti mancanti in background. Se il plugin non compare ancora, riavvia il
-servizio:
+`opencode plugin add` installa il pacchetto, ma **non attiva il plugin nelle
+sessioni già aperte**. Il caricamento avviene all'avvio del servizio/sessione. Se
+lo hai appena installato, riavvia il servizio o apri una nuova sessione:
 
 ```bash
 opencode service restart
 ```
+
+OpenCode V2 ricarica automaticamente anche le configurazioni osservate e installa
+i pacchetti mancanti in background, ma l'hook del plugin diventa effettivo solo
+al caricamento successivo.
 
 ### Verificare che funzioni
 
@@ -236,7 +248,7 @@ estratta (contiene `package.json` e `dist/`):
 
 ```bash
 pnpm pack
-tar -xzf plugin-rtk_opencode-v2-0.1.0.tgz
+tar -xzf plugin-rtk_opencode-v2-0.1.1.tgz
 ```
 
 ## Come funziona
@@ -270,6 +282,15 @@ I comandi che comportano escalation di privilegi (`sudo`, `doas`, `pkexec`,
 `runas`, `gsudo`, `su`) non vengono mai riscritti, anche dentro pipe e shell
 annidate come `bash -c 'sudo ...'`. Il plugin deve operare con i permessi
 dell'utente che esegue OpenCode.
+
+Anche i comandi che richiamano `npm`, `pnpm`, `yarn` o `bun` non vengono mai
+riscritti, compresi i comandi composti come `cd app && pnpm lint`. Questo vale
+anche per gli script di package manager: il loro corpo è definito dal progetto e
+RTK può mappare, per esempio, `pnpm lint` su `rtk lint`, che esegue ESLint. Nei progetti che usano Biome,
+oxlint o un altro linter, questo cambierebbe il comando e potrebbe rompere
+l'esecuzione. Per ottenere il risparmio di RTK, richiama direttamente lo
+strumento (`tsc --noEmit`, `eslint src`) invece di passare dallo script del
+package manager.
 
 ### Hook shell opzionale
 
@@ -322,11 +343,17 @@ Esempio con un percorso personalizzato del binario e l'hook shell abilitato:
 **Il plugin non compare in `opencode plugin list`.** Verifica che la chiave sia
 `plugins` (plurale, sintassi V2), che il file sia in uno dei percorsi accettati e
 che tu abbia riavviato OpenCode. Esegui di nuovo `opencode plugin add` per
-controllare l'installazione.
+controllare l'installazione. Per verificare il download, la cache si trova in
+`~/.cache/opencode/npm/plugin-rtk_opencode-v2@latest/<build>/node_modules/`.
+
+**Ho installato il plugin, ma i comandi non cambiano.** `plugin add` non applica
+il plugin a una sessione già aperta. Riavvia il servizio con
+`opencode service restart` o apri una nuova sessione e riprova. Nel log di
+OpenCode deve comparire `loading plugin id=plugin-rtk_opencode-v2` all'avvio.
 
 **Errore 404 o "package not found" durante l'installazione.** Verifica il nome
 esatto e la versione pubblicata con `npm view plugin-rtk_opencode-v2 version`
-(attesa: `0.1.0`) e controlla che il registry npm sia raggiungibile. Se il
+(attesa: `0.1.1`) e controlla che il registry npm sia raggiungibile. Se il
 problema persiste, usa l'installazione locale o via Git descritta sopra.
 
 **I comandi non vengono riscritti.** Verifica che `rtk rewrite "git status"`
@@ -334,6 +361,12 @@ stampi un comando riscritto nello stesso ambiente in cui viene eseguito
 OpenCode. Controlla che il comando non abbia già il prefisso `rtk`, non sia più
 lungo di `maxCommandLength` e che `enabled` non sia `false`. Attiva
 `debug: true` per vedere la diagnostica del plugin.
+
+**`pnpm lint`, `npm run lint` e altri script non vengono riscritti.** È
+intenzionale. Il plugin non modifica i richiami agli script di package manager
+perché il corpo dello script è definito dal progetto e RTK può assumere ESLint
+quando il progetto usa un altro linter. Esegui lo script normalmente o richiama
+direttamente lo strumento.
 
 **RTK non viene trovato.** Imposta `rtkPath` su un percorso assoluto. Sui sistemi
 in cui il processo OpenCode ha un `PATH` diverso, il binario potrebbe non essere
@@ -367,7 +400,7 @@ build per le installazioni via Git.
 
 Le release sono pubblicate automaticamente dal workflow `release.yml` in GitHub
 Actions a ogni push su `main`: incrementa la versione, pubblica su npm con
-provenance e crea la release su GitHub. La versione `0.1.0` e le successive sono
+provenance e crea la release su GitHub. La versione `0.1.1` e le successive sono
 elencate in <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. Il
 flusso attuale usa un token npm granulare; la migrazione a Trusted Publishing
 (OIDC) è prevista per il 2026-11-01. Vedi
@@ -375,7 +408,8 @@ flusso attuale usa un token npm granulare; la migrazione a Trusted Publishing
 
 ## Compatibilità
 
-- OpenCode V2 `2.1.1` e successivi (`@opencode/plugin@^2.1.1`)
+- OpenCode V2 `2.1.1` e successivi (`@opencode/plugin@^2.1.1`), testato con
+  `2.1.2`
 - RTK `0.27` e successivi, testato con `0.49.0`
 - Node.js `22` e `24`
 

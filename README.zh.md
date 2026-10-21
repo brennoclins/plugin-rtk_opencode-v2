@@ -29,8 +29,11 @@ Shell 工具会产生大量输出。`git status`、`grep`、`tsc` 和测试套�
 ```text
 git status                    ->  rtk git status
 rg "TODO" src                 ->  rtk rg "TODO" src
-pnpm tsc --noEmit             ->  rtk tsc --noEmit
+tsc --noEmit                  ->  rtk tsc --noEmit
 ```
+
+调用 `npm`、`pnpm`、`yarn` 或 `bun` 的命令会保持不变，包括 `pnpm lint`
+这样的脚本，因为脚本内容由项目定义。参见[工作原理](#工作原理)。
 
 节省量取决于项目和命令。RTK 会在本地保存节省历史；可以用以下命令查看：
 
@@ -69,17 +72,21 @@ rtk --version
 
 ## 安装
 
-该插件是一个已发布并由 OpenCode V2 加载的 npm 包。当前版本是 `0.1.0`：
+该插件是一个已发布并由 OpenCode V2 加载的 npm 包。当前版本是 `0.1.1`：
 
 ```bash
 npm view plugin-rtk_opencode-v2 version
-# 0.1.0
+# 0.1.1
 ```
 
-你**不需要**运行 `npm install` 或 `pnpm add`：OpenCode 会在启动时使用 Bun 安装配置中声明的包，
-并缓存到 `~/.cache/opencode/node_modules/`。
+你**不需要**运行 `npm install` 或 `pnpm add`：OpenCode 会在启动时安装配置中声明的包，
+并缓存到：
 
-> `0.0.0-stage` 是首次发布时创建的占位版本；`latest` 指向 `0.1.0`，OpenCode 安装的就是该版本。
+```text
+~/.cache/opencode/npm/<包名>@latest/<build>/node_modules/
+```
+
+> `0.0.0-stage` 是首次发布时创建的占位版本；`latest` 指向 `0.1.1`，OpenCode 安装的就是该版本。
 
 ### 方式 1 — CLI（推荐）
 
@@ -134,12 +141,14 @@ OpenCode V2 接受的配置文件：
 
 首次运行时，OpenCode 会下载该包，因此需要网络访问。之后包会被缓存，后续启动会很快。
 
-OpenCode V2 会自动重新加载被监视的配置，并在后台安装缺失的包。如果插件仍未出现，
-请重启服务：
+`opencode plugin add` 会安装包，但**不会在已经打开的会话中启用插件**。插件在服务/会话启动时加载。
+如果你刚刚安装，请重启服务或打开新会话：
 
 ```bash
 opencode service restart
 ```
+
+OpenCode V2 也会自动重新加载被监视的配置，并在后台安装缺失的包，但插件 hook 只会在下一次加载时生效。
 
 ### 验证是否生效
 
@@ -220,7 +229,7 @@ opencode plugin add github:brennoclins/plugin-rtk_opencode-v2
 
 ```bash
 pnpm pack
-tar -xzf plugin-rtk_opencode-v2-0.1.0.tgz
+tar -xzf plugin-rtk_opencode-v2-0.1.1.tgz
 ```
 
 ## 工作原理
@@ -246,6 +255,12 @@ RTK 的可用性通过 `rtk --version` 探测，并缓存 `probeTtlMs` 时间。
 涉及权限提升的命令（`sudo`、`doas`、`pkexec`、`runas`、`gsudo`、`su`）永远不会被重写，
 包括管道和嵌套 shell 中的情况，例如 `bash -c 'sudo ...'`。插件应始终以运行 OpenCode
 的普通用户权限工作。
+
+调用 `npm`、`pnpm`、`yarn` 或 `bun` 的命令也永远不会被重写，包括
+`cd app && pnpm lint` 这样的复合命令。这也适用于 package manager 脚本：
+脚本内容由项目定义，RTK 可能把 `pnpm lint` 映射为 `rtk lint`，而后者会执行 ESLint。在使用 Biome、oxlint 或其他
+linter 的项目中，这会改变命令含义并可能导致执行失败。如果想获得 RTK 的节省效果，
+请直接调用工具（`tsc --noEmit`、`eslint src`），不要经过 package manager 脚本。
 
 ### 可选的 shell hook
 
@@ -292,14 +307,24 @@ RTK 的可用性通过 `rtk --version` 探测，并缓存 `probeTtlMs` 时间。
 
 **插件没有出现在 `opencode plugin list` 中。** 确认键名是 `plugins`（复数，V2 语法），
 文件位于可接受的路径之一，并且已重启 OpenCode。再次运行 `opencode plugin add` 以检查安装。
+如需查看下载内容，缓存位于
+`~/.cache/opencode/npm/plugin-rtk_opencode-v2@latest/<build>/node_modules/`。
+
+**安装后命令没有变化。** `plugin add` 不会把插件应用到已经打开的会话。请用
+`opencode service restart` 重启服务，或打开新会话后重试。OpenCode 日志应在启动时显示
+`loading plugin id=plugin-rtk_opencode-v2`。
 
 **安装时出现 404 或 "package not found"。** 用 `npm view plugin-rtk_opencode-v2 version`
-确认包名准确和已发布版本（应为 `0.1.0`），并检查 npm registry 是否可访问。如果问题仍然存在，
+确认包名准确和已发布版本（应为 `0.1.1`），并检查 npm registry 是否可访问。如果问题仍然存在，
 请使用上面描述的本地或 Git 安装方式。
 
 **命令没有被重写。** 确认在 OpenCode 运行的同一环境中，`rtk rewrite "git status"`
 会输出重写后的命令。检查命令是否已带有 `rtk` 前缀、是否超过 `maxCommandLength`，以及 `enabled`
 是否为 `false`。启用 `debug: true` 查看插件诊断信息。
+
+**`pnpm lint`、`npm run lint` 等脚本没有被重写。** 这是有意为之。插件不会修改
+package manager 脚本调用，因为脚本内容由项目定义，而 RTK 可能在项目使用其他 linter 时
+假定为 ESLint。请直接运行脚本，或直接调用相应工具。
 
 **找不到 RTK。** 将 `rtkPath` 设置为绝对路径。如果 OpenCode 进程的 `PATH`
 不同，可能无法按名称找到该二进制文件。
@@ -327,14 +352,14 @@ pnpm pack
 `prepare` 脚本会为基于 Git 的安装执行构建。
 
 发布由 GitHub Actions 中的 `release.yml` 工作流在每次推送到 `main` 时自动完成：
-它会递增版本、带 provenance 发布到 npm，并创建 GitHub Release。`0.1.0` 及后续版本见
+它会递增版本、带 provenance 发布到 npm，并创建 GitHub Release。`0.1.1` 及后续版本见
 <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>。当前流程使用 npm
 granular token；计划于 2026-11-01 迁移到 Trusted Publishing（OIDC）。参见
 [CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md)。
 
 ## 兼容性
 
-- OpenCode V2 `2.1.1` 及更高版本（`@opencode/plugin@^2.1.1`）
+- OpenCode V2 `2.1.1` 及更高版本（`@opencode/plugin@^2.1.1`），已针对 `2.1.2` 测试
 - RTK `0.27` 及更高版本，已针对 `0.49.0` 测试
 - Node.js `22` 和 `24`
 

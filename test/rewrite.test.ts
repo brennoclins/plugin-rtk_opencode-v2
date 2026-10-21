@@ -64,6 +64,36 @@ describe("shouldSkip", () => {
     expect(shouldSkip("command rtkit", 8_000)).toBe(false)
   })
 
+  it("skips package-manager script invocations", () => {
+    for (const command of [
+      "npm run lint",
+      "npm run --silent lint",
+      "npm test",
+      "pnpm lint",
+      "pnpm run build",
+      "yarn lint",
+      "yarn run lint",
+      "bun run lint",
+      "bun lint",
+      "cd app && pnpm lint",
+      "bash -c 'npm run lint'",
+      "/usr/local/bin/pnpm lint",
+      "corepack pnpm lint",
+      "NPM run lint",
+      "npm.cmd run lint",
+      "C:\\Program Files\\nodejs\\npm.cmd run lint",
+    ]) {
+      expect(shouldSkip(command, 8_000)).toBe(true)
+    }
+  })
+
+  it("does not skip commands that merely mention package-manager names or files", () => {
+    expect(shouldSkip("cat pnpm-lock.yaml", 8_000)).toBe(false)
+    expect(shouldSkip("git diff npm/package.json", 8_000)).toBe(false)
+    expect(shouldSkip("ls .npmrc", 8_000)).toBe(false)
+    expect(shouldSkip("git log --grep=pnpm", 8_000)).toBe(false)
+  })
+
   it("skips commands above the maximum length", () => {
     expect(shouldSkip("git status", 10)).toBe(false)
     expect(shouldSkip("git status", 9)).toBe(true)
@@ -104,6 +134,16 @@ describe("createEngine", () => {
     await expect(engine.rewrite("")).resolves.toBeNull()
     await expect(engine.rewrite("rtk git status")).resolves.toBeNull()
     await expect(engine.rewrite("git status")).resolves.toBeNull()
+    expect(rewrite).not.toHaveBeenCalled()
+  })
+
+  it("does not rewrite package-manager script invocations", async () => {
+    const { client, rewrite } = fakeClient(async (command) => `rtk ${command}`)
+    const engine = createEngine(options(), client)
+
+    await expect(engine.rewrite("pnpm lint")).resolves.toBeNull()
+    await expect(engine.rewrite("npm run lint")).resolves.toBeNull()
+    await expect(engine.rewrite("cd app && pnpm lint")).resolves.toBeNull()
     expect(rewrite).not.toHaveBeenCalled()
   })
 

@@ -33,8 +33,12 @@ execução e deixa o RTK fazer o trabalho.
 ```text
 git status                    ->  rtk git status
 rg "TODO" src                 ->  rtk rg "TODO" src
-pnpm tsc --noEmit             ->  rtk tsc --noEmit
+tsc --noEmit                  ->  rtk tsc --noEmit
 ```
+
+Comandos que invocam `npm`, `pnpm`, `yarn` ou `bun` são mantidos intactos,
+inclusive scripts como `pnpm lint`, porque o conteúdo desses scripts é definido
+pelo projeto. Veja [Como funciona](#como-funciona).
 
 O ganho varia conforme o projeto e o comando. O RTK mantém um histórico local de
 economia; consulte com:
@@ -75,19 +79,22 @@ rtk --version
 ## Instalação
 
 O plugin é um pacote npm publicado e carregado pelo OpenCode V2. A versão atual
-é `0.1.0`:
+é `0.1.1`:
 
 ```bash
 npm view plugin-rtk_opencode-v2 version
-# 0.1.0
+# 0.1.1
 ```
 
 Você **não precisa** executar `npm install` nem `pnpm add`: o OpenCode instala
-os pacotes declarados na configuração usando Bun no startup e guarda o cache em
-`~/.cache/opencode/node_modules/`.
+os pacotes declarados na configuração no startup e guarda o cache em:
+
+```text
+~/.cache/opencode/npm/<pacote>@latest/<build>/node_modules/
+```
 
 > A versão `0.0.0-stage` é um placeholder da primeira publicação; o `latest`
-> aponta para `0.1.0` e é essa versão que o OpenCode instala.
+> aponta para `0.1.1` e é essa versão que o OpenCode instala.
 
 ### Opção 1 — CLI (recomendado)
 
@@ -146,13 +153,17 @@ Com opções, use a forma de objeto:
 Na primeira execução, o OpenCode baixa o pacote; é necessário acesso à rede.
 Depois o pacote fica em cache e os próximos startups são rápidos.
 
-O OpenCode V2 recarrega configurações observadas automaticamente e instala
-pacotes faltantes em background. Se o plugin ainda não aparecer, reinicie o
-serviço:
+O `opencode plugin add` instala o pacote, mas **não ativa o plugin em sessões já
+abertas**. O carregamento acontece no startup do serviço/sessão. Se você acabou
+de instalar, reinicie o serviço ou abra uma nova sessão:
 
 ```bash
 opencode service restart
 ```
+
+O OpenCode V2 também recarrega configurações observadas automaticamente e
+instala pacotes faltantes em background, mas o hook do plugin só passa a valer
+no próximo carregamento.
 
 ### Verificar se está funcionando
 
@@ -235,7 +246,7 @@ extraída (ela contém `package.json` e `dist/`):
 
 ```bash
 pnpm pack
-tar -xzf plugin-rtk_opencode-v2-0.1.0.tgz
+tar -xzf plugin-rtk_opencode-v2-0.1.1.tgz
 ```
 
 ## Como funciona
@@ -268,6 +279,14 @@ Comandos que envolvem elevação de privilégio (`sudo`, `doas`, `pkexec`, `runa
 `gsudo`, `su`) nunca são reescritos, inclusive dentro de pipes e shells aninhados
 como `bash -c 'sudo ...'`. A ideia é que o plugin opere sempre com as permissões
 do usuário que executa o OpenCode.
+
+Comandos que invocam `npm`, `pnpm`, `yarn` ou `bun` também nunca são reescritos,
+inclusive em comandos compostos como `cd app && pnpm lint`. Isso inclui scripts
+de package manager: o corpo deles é definido pelo projeto, e o RTK pode mapear,
+por exemplo, `pnpm lint` para `rtk lint`, que executa ESLint. Em projetos que usam Biome,
+oxlint ou outro linter, isso mudaria o comando e poderia quebrar a execução. Se
+quiser o ganho do RTK, invoque a ferramenta diretamente (`tsc --noEmit`,
+`eslint src`) em vez de passar pelo script do package manager.
 
 ### Hook de shell opcional
 
@@ -320,11 +339,17 @@ Exemplo com caminho personalizado do binário e o hook de shell habilitado:
 **O plugin não aparece em `opencode plugin list`.** Confirme que a chave é
 `plugins` (plural, sintaxe do V2), que o arquivo está em um dos caminhos aceitos
 e que você reiniciou o OpenCode. Rode `opencode plugin add` novamente para
-verificar a instalação.
+verificar a instalação. Para conferir o download, o cache fica em
+`~/.cache/opencode/npm/plugin-rtk_opencode-v2@latest/<build>/node_modules/`.
+
+**Instalei, mas os comandos continuam iguais.** O `plugin add` não aplica o
+plugin a uma sessão já aberta. Reinicie o serviço com `opencode service restart`
+ou abra uma nova sessão e teste novamente. O log do OpenCode deve mostrar
+`loading plugin id=plugin-rtk_opencode-v2` no startup.
 
 **Erro 404 ou "package not found" ao instalar.** Confirme o nome exato e a
 versão publicada com `npm view plugin-rtk_opencode-v2 version` (esperado:
-`0.1.0`) e verifique se o registry npm está acessível. Se o problema persistir,
+`0.1.1`) e verifique se o registry npm está acessível. Se o problema persistir,
 use a instalação local ou via Git descrita acima.
 
 **Os comandos não são reescritos.** Confirme que `rtk rewrite "git status"`
@@ -332,6 +357,12 @@ imprime um comando reescrito no mesmo ambiente em que o OpenCode é executado.
 Verifique se o comando ainda não tem o prefixo `rtk`, se não é maior que
 `maxCommandLength` e se `enabled` não é `false`. Ative `debug: true` para ver o
 diagnóstico do plugin.
+
+**`pnpm lint`, `npm run lint` e outros scripts não são reescritos.** Isso é
+intencional. O plugin não altera invocações de scripts de package manager porque
+o corpo do script é definido pelo projeto e o RTK pode assumir ESLint quando o
+projeto usa outro linter. Execute o script normalmente ou chame a ferramenta
+diretamente.
 
 **RTK não é encontrado.** Defina `rtkPath` com um caminho absoluto. Em sistemas
 onde o processo do OpenCode tem um `PATH` diferente, o binário pode não ser
@@ -365,7 +396,7 @@ o build em instalações via Git.
 
 As releases são publicadas automaticamente pelo workflow `release.yml` no GitHub
 Actions a cada push na `main`: ele incrementa a versão, publica no npm com
-provenance e cria a release no GitHub. A versão `0.1.0` e as seguintes ficam em
+provenance e cria a release no GitHub. A versão `0.1.1` e as seguintes ficam em
 <https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. O fluxo atual
 usa um token granular do npm; a migração para Trusted Publishing (OIDC) está
 planejada para 2026-11-01. Consulte
@@ -373,7 +404,8 @@ planejada para 2026-11-01. Consulte
 
 ## Compatibilidade
 
-- OpenCode V2 `2.1.1` e posteriores (`@opencode/plugin@^2.1.1`)
+- OpenCode V2 `2.1.1` e posteriores (`@opencode/plugin@^2.1.1`), testado com
+  `2.1.2`
 - RTK `0.27` e posteriores, testado com `0.49.0`
 - Node.js `22` e `24`
 

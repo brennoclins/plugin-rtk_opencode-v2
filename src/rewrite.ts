@@ -9,11 +9,24 @@ const RTK_COMMANDS = new Set(["rtk", "rtk.exe"])
 const PRIVILEGED_COMMANDS = new Set(["doas", "gsudo", "pkexec", "runas", "sudo", "su"])
 const PRIVILEGED_ANYWHERE =
   /(?:^|[\s;&|()'"`])(?:doas|gsudo|pkexec|runas|sudo|su)(?=$|[\s;&|()'"`])/
+const PACKAGE_MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"])
+const TOKEN_SEPARATORS = /[\s;&|()<>`]+/
+const WINDOWS_EXTENSIONS = [".exe", ".cmd", ".bat"]
 
 function basename(token: string): string {
   const normalized = token.replaceAll("\\", "/")
   const name = normalized.slice(normalized.lastIndexOf("/") + 1).toLowerCase()
-  return name.endsWith(".exe") ? name.slice(0, -".exe".length) : name
+  const extension = WINDOWS_EXTENSIONS.find((candidate) => name.endsWith(candidate))
+  return extension ? name.slice(0, -extension.length) : name
+}
+
+function mentionsPackageManager(command: string): boolean {
+  for (const token of command.split(TOKEN_SEPARATORS)) {
+    const name = basename(token.replace(/^["']+|["']+$/g, ""))
+    if (PACKAGE_MANAGERS.has(name)) return true
+  }
+
+  return false
 }
 
 function executableName(command: string): string | undefined {
@@ -34,6 +47,11 @@ export function shouldSkip(command: string, maxCommandLength: number): boolean {
   const trimmed = command.trim()
   if (trimmed.length === 0) return true
   if (trimmed.length > maxCommandLength) return true
+
+  // Package-manager scripts are defined by the project. RTK can rewrite
+  // `pnpm lint` to `rtk lint`, which assumes ESLint and changes the meaning of
+  // the command when the project uses Biome, oxlint, or another linter.
+  if (mentionsPackageManager(trimmed)) return true
 
   const executable = executableName(trimmed)
   if (executable === undefined) return true
