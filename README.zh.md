@@ -1,5 +1,9 @@
 # plugin-rtk_opencode-v2
 
+[![npm version](https://img.shields.io/npm/v/plugin-rtk_opencode-v2.svg)](https://www.npmjs.com/package/plugin-rtk_opencode-v2)
+[![CI](https://github.com/brennoclins/plugin-rtk_opencode-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/brennoclins/plugin-rtk_opencode-v2/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+
 [Português (Brasil)](README.md) | [English](README.en.md) | [Italiano](README.it.md) | **简体中文**
 
 一个 [OpenCode V2](https://opencode.ai) 插件，在执行前将 shell 命令重写为
@@ -15,9 +19,30 @@ echo hi             ->  echo hi
 
 重写采用尽力而为、静默回退的方式：如果 RTK 缺失、响应缓慢或执行失败，原始命令将保持不变。
 
+## 为什么使用
+
+Shell 工具会产生大量输出。`git status`、`grep`、`tsc` 和测试套件可能会向智能体上下文写入数千行，
+每一行都会消耗 token。RTK 是一个 CLI 代理，会在模型读取之前过滤和总结这些输出，同时保留有用信息。
+
+插件不会重新实现这些功能：它只在执行前替换命令，然后让 RTK 完成工作。
+
+```text
+git status                    ->  rtk git status
+rg "TODO" src                 ->  rtk rg "TODO" src
+pnpm tsc --noEmit             ->  rtk tsc --noEmit
+```
+
+节省量取决于项目和命令。RTK 会在本地保存节省历史；可以用以下命令查看：
+
+```bash
+rtk gain
+```
+
+插件不收集遥测数据，也不会向任何地方发送数据。
+
 ## 环境要求
 
-- OpenCode V2 `>= 2.1.1`
+- 已安装并正常运行的 OpenCode V2 `>= 2.1.1`
 - Node.js `>= 22.13`
 - [RTK](https://github.com/rtk-ai/rtk) `>= 0.27`，并位于 `PATH` 中（或设置
   `rtkPath`）
@@ -44,28 +69,151 @@ rtk --version
 
 ## 安装
 
-在 OpenCode V2 配置中安装插件：
+该插件是一个由 OpenCode V2 加载的 npm 包。你**不需要**运行 `npm install` 或 `pnpm add`：
+OpenCode 会在启动时使用 Bun 安装配置中声明的包，并缓存到
+`~/.cache/opencode/node_modules/`。
+
+### 方式 1 — CLI（推荐）
+
+```bash
+opencode plugin add plugin-rtk_opencode-v2
+```
+
+该命令会安装包并将条目添加到全局 `opencode.jsonc`。用以下命令确认：
+
+```bash
+opencode plugin list
+```
+
+### 方式 2 — 编辑配置
+
+OpenCode V2 接受的配置文件：
+
+| 范围 | 路径                                                     |
+| ---- | -------------------------------------------------------- |
+| 全局 | `~/.config/opencode/opencode.jsonc`（或 `.json`）         |
+| 项目 | `./opencode.jsonc` 或 `./.opencode/opencode.jsonc`       |
+
+将 `plugins` 添加到现有文件中；不要替换配置的其余部分。新建文件的示例：
 
 ```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["plugin-rtk_opencode-v2"]
+}
+```
+
+需要选项时，请使用对象形式：
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
       "package": "plugin-rtk_opencode-v2",
-      "options": {}
+      "options": {
+        "rtkPath": "/home/me/.local/bin/rtk",
+        "timeoutMs": 750
+      }
     }
   ]
 }
 ```
 
-当不需要任何选项时，也可以使用字符串简写：
+> 字符串形式（`"plugin-rtk_opencode-v2"`）不接受选项。需要配置任何内容时，请使用对象形式。
+
+### 首次加载
+
+首次运行时，OpenCode 会下载该包，因此需要网络访问。之后包会被缓存，后续启动会很快。
+
+OpenCode V2 会自动重新加载被监视的配置，并在后台安装缺失的包。如果插件仍未出现，
+请重启服务：
+
+```bash
+opencode service restart
+```
+
+### 验证是否生效
+
+1. 确认插件已被列出：
+
+   ```bash
+   opencode plugin list
+   ```
+
+2. 确认 RTK 在与 OpenCode 相同的环境中可以重写命令：
+
+   ```bash
+   rtk rewrite "git status"
+   # rtk git status
+   ```
+
+3. 在插件选项中启用诊断模式：
+
+   ```jsonc
+   {
+     "plugins": [
+       {
+         "package": "plugin-rtk_opencode-v2",
+         "options": { "debug": true }
+       }
+     ]
+   }
+   ```
+
+   启用 `debug` 后，`rtk probe succeeded`、`rtk rewrite timed out` 和
+   `rtk rewrite produced stderr diagnostics` 等消息会出现在 OpenCode 的 stderr 中。
+   绝不会记录命令内容。
+
+4. 通过智能体运行一个命令，例如 `git status`，然后检查 RTK 历史是否记录了这次执行：
+
+   ```bash
+   rtk gain
+   ```
+
+### 更新和移除
+
+```bash
+opencode plugin check
+opencode plugin update plugin-rtk_opencode-v2
+opencode plugin remove plugin-rtk_opencode-v2
+```
+
+`plugin check` 检查新版本；`plugin update` 更新所有过时的插件（或仅更新指定的插件）。
+要移除插件，也可以从配置文件中删除 `plugins` 条目。
+
+### 本地或 Git 安装
+
+要测试源代码版本：
+
+```bash
+pnpm install
+pnpm build
+```
+
+然后将配置指向包的绝对目录：
 
 ```jsonc
 {
-  "plugins": ["plugin-rtk_opencode-v2"]
+  "plugins": ["/home/me/dev/plugin-rtk_opencode-v2"]
 }
 ```
 
-修改配置后请重启 OpenCode。
+也可以直接从 GitHub 安装：
+
+```bash
+opencode plugin add github:brennoclins/plugin-rtk_opencode-v2
+```
+
+`prepare` 脚本会在这种安装方式下自动构建项目。
+
+离线使用时，生成 tarball，解压后将 `plugins` 指向解压后的目录（其中包含
+`package.json` 和 `dist/`）：
+
+```bash
+pnpm pack
+tar -xzf plugin-rtk_opencode-v2-0.1.0.tgz
+```
 
 ## 工作原理
 
@@ -77,6 +225,7 @@ rtk rewrite <command>
 ```
 
 通过 `execFile` 调用，不经过 shell，因此命令会作为单个参数传递，无法向插件进程注入 shell 语法。
+插件也不会执行重写后的命令：它只更改 OpenCode 将要执行的命令。
 
 当 `rtk rewrite` 输出非空 stdout 时，视为重写成功。RTK 目前在成功时返回退出码 `3`，没有等价命令时返回
 `1`，因此插件有意忽略退出码，改为检查 stdout。已经调用 `rtk` 的命令（包括绝对路径、
@@ -110,7 +259,8 @@ RTK 的可用性通过 `rtk --version` 探测，并缓存 `probeTtlMs` 时间。
 | `debug`            | `false` | 将诊断信息写入 stderr。绝不会记录命令内容。                  |
 | `maxCommandLength` | `8000`  | 超过此长度的命令不会被重写。                                 |
 
-无效的选项值会回退到默认值，而不会导致插件启动失败。
+选项只能通过上面的对象形式设置；字符串形式只使用默认值。无效的选项值会回退到默认值，
+而不会导致插件启动失败。
 
 示例：自定义二进制路径并启用 shell hook：
 
@@ -132,9 +282,15 @@ RTK 的可用性通过 `rtk --version` 探测，并缓存 `probeTtlMs` 时间。
 
 ## 故障排查
 
+**插件没有出现在 `opencode plugin list` 中。** 确认键名是 `plugins`（复数，V2 语法），
+文件位于可接受的路径之一，并且已重启 OpenCode。再次运行 `opencode plugin add` 以检查安装。
+
+**安装时出现 404 或 "package not found"。** 用 `npm view plugin-rtk_opencode-v2 version`
+确认包名准确无误。如果没有已发布的版本，请使用上面描述的本地或 Git 安装方式。
+
 **命令没有被重写。** 确认在 OpenCode 运行的同一环境中，`rtk rewrite "git status"`
 会输出重写后的命令。检查命令是否已带有 `rtk` 前缀、是否超过 `maxCommandLength`，以及 `enabled`
-是否为 `false`。
+是否为 `false`。启用 `debug: true` 查看插件诊断信息。
 
 **找不到 RTK。** 将 `rtkPath` 设置为绝对路径。如果 OpenCode 进程的 `PATH`
 不同，可能无法按名称找到该二进制文件。
@@ -155,9 +311,11 @@ pnpm typecheck
 pnpm test
 pnpm coverage
 pnpm build
+pnpm pack
 ```
 
 测试套件使用 `test/fixtures/fake-rtk.mjs` 中的假 RTK 二进制文件；运行测试不需要真实的 `rtk`。
+`prepare` 脚本会为基于 Git 的安装执行构建。
 
 ## 兼容性
 

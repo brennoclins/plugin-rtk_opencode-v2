@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Multilingual README with Brazilian Portuguese as the default, plus English,
   Italian, and Simplified Chinese.
+- README badges for npm, CI, and license.
+- Installation guide covering the OpenCode CLI (`opencode plugin add`), global
+  and project configuration files, the required `$schema`, first-load behavior,
+  verification steps, update/removal commands, and local/Git alternatives.
+- Explanation of why RTK reduces token usage and how to inspect savings with
+  `rtk gain`.
+- `prepare` script so Git-based installations build `dist/` automatically, and
+  `prepublishOnly` to run lint, typecheck, and tests before publishing.
 
 ### Changed
 
@@ -25,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions updated to `checkout@v7`, `setup-node@v7`, and
   `pnpm/action-setup@v6`; TypeScript updated to 7 and `@types/node` aligned with
   the minimum supported Node.js 22.
+- README installation examples now use complete `opencode.jsonc` snippets and
+  state that options require the object form.
 
 ### Removed
 

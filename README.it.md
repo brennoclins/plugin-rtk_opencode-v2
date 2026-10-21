@@ -1,5 +1,9 @@
 # plugin-rtk_opencode-v2
 
+[![npm version](https://img.shields.io/npm/v/plugin-rtk_opencode-v2.svg)](https://www.npmjs.com/package/plugin-rtk_opencode-v2)
+[![CI](https://github.com/brennoclins/plugin-rtk_opencode-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/brennoclins/plugin-rtk_opencode-v2/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+
 [Português (Brasil)](README.md) | [English](README.en.md) | **Italiano** | [简体中文](README.zh.md)
 
 Plugin per [OpenCode V2](https://opencode.ai) che riscrive i comandi shell in
@@ -16,9 +20,34 @@ echo hi             ->  echo hi
 La riscrittura è best-effort e silenziosa: se RTK manca, è lento o fallisce, il
 comando originale viene eseguito invariato.
 
+## Perché usarlo
+
+Gli strumenti shell producono output di grandi dimensioni. `git status`, `grep`,
+`tsc` e le suite di test possono riversare migliaia di righe nel contesto
+dell'agente, e ogni riga costa token. RTK è un proxy CLI che filtra e riassume
+questi output prima che il modello li legga, preservando le informazioni utili.
+
+Il plugin non reimplementa nulla di tutto ciò: cambia solo il comando prima
+dell'esecuzione e lascia che RTK faccia il lavoro.
+
+```text
+git status                    ->  rtk git status
+rg "TODO" src                 ->  rtk rg "TODO" src
+pnpm tsc --noEmit             ->  rtk tsc --noEmit
+```
+
+Il guadagno dipende dal progetto e dal comando. RTK mantiene una cronologia
+locale dei risparmi; consultala con:
+
+```bash
+rtk gain
+```
+
+Il plugin non raccoglie telemetria e non invia dati da nessuna parte.
+
 ## Requisiti
 
-- OpenCode V2 `>= 2.1.1`
+- OpenCode V2 `>= 2.1.1` installato e funzionante
 - Node.js `>= 22.13`
 - [RTK](https://github.com/rtk-ai/rtk) `>= 0.27` disponibile nel `PATH` (oppure
   imposta `rtkPath`)
@@ -45,28 +74,160 @@ rtk --version
 
 ## Installazione
 
-Installa il plugin nella configurazione di OpenCode V2:
+Il plugin è un pacchetto npm caricato da OpenCode V2. **Non** è necessario
+eseguire `npm install` o `pnpm add`: OpenCode installa i pacchetti dichiarati
+nella configurazione usando Bun all'avvio e li memorizza nella cache in
+`~/.cache/opencode/node_modules/`.
+
+### Opzione 1 — CLI (consigliata)
+
+```bash
+opencode plugin add plugin-rtk_opencode-v2
+```
+
+Il comando installa il pacchetto e aggiunge la voce al file globale
+`opencode.jsonc`. Conferma con:
+
+```bash
+opencode plugin list
+```
+
+### Opzione 2 — modificare la configurazione
+
+File di configurazione accettati da OpenCode V2:
+
+| Ambito  | Percorso                                                     |
+| ------- | ------------------------------------------------------------ |
+| Globale | `~/.config/opencode/opencode.jsonc` (o `.json`)              |
+| Progetto | `./opencode.jsonc` oppure `./.opencode/opencode.jsonc`      |
+
+Aggiungi `plugins` al file esistente; non sostituire il resto della
+configurazione. Esempio di un file nuovo:
 
 ```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["plugin-rtk_opencode-v2"]
+}
+```
+
+Quando servono opzioni, usa la forma a oggetto:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
       "package": "plugin-rtk_opencode-v2",
-      "options": {}
+      "options": {
+        "rtkPath": "/home/me/.local/bin/rtk",
+        "timeoutMs": 750
+      }
     }
   ]
 }
 ```
 
-La forma abbreviata con stringa è accettata anche quando non servono opzioni:
+> La forma a stringa (`"plugin-rtk_opencode-v2"`) non accetta opzioni. Usa la
+> forma a oggetto ogni volta che devi configurare qualcosa.
+
+### Primo caricamento
+
+Alla prima esecuzione OpenCode scarica il pacchetto; è necessario l'accesso alla
+rete. Dopo, il pacchetto resta in cache e gli avvii successivi sono rapidi.
+
+OpenCode V2 ricarica automaticamente le configurazioni osservate e installa i
+pacchetti mancanti in background. Se il plugin non compare ancora, riavvia il
+servizio:
+
+```bash
+opencode service restart
+```
+
+### Verificare che funzioni
+
+1. Conferma che il plugin sia elencato:
+
+   ```bash
+   opencode plugin list
+   ```
+
+2. Conferma che RTK riscriva i comandi nello stesso ambiente di OpenCode:
+
+   ```bash
+   rtk rewrite "git status"
+   # rtk git status
+   ```
+
+3. Attiva la modalità diagnostica nelle opzioni del plugin:
+
+   ```jsonc
+   {
+     "plugins": [
+       {
+         "package": "plugin-rtk_opencode-v2",
+         "options": { "debug": true }
+       }
+     ]
+   }
+   ```
+
+   Con `debug`, messaggi come `rtk probe succeeded`, `rtk rewrite timed out` e
+   `rtk rewrite produced stderr diagnostics` compaiono nello stderr di OpenCode.
+   Il contenuto dei comandi non viene mai registrato.
+
+4. Esegui un comando tramite l'agente, ad esempio `git status`, e controlla se
+   la cronologia di RTK ha registrato l'esecuzione:
+
+   ```bash
+   rtk gain
+   ```
+
+### Aggiornare e rimuovere
+
+```bash
+opencode plugin check
+opencode plugin update plugin-rtk_opencode-v2
+opencode plugin remove plugin-rtk_opencode-v2
+```
+
+`plugin check` cerca nuove versioni; `plugin update` aggiorna tutti i plugin
+obsoleti (o solo quello indicato). Per rimuoverlo, puoi anche eliminare la voce
+`plugins` dal file di configurazione.
+
+### Installazione locale o via Git
+
+Per provare un checkout del codice sorgente:
+
+```bash
+pnpm install
+pnpm build
+```
+
+Poi punta la configurazione alla directory assoluta del pacchetto:
 
 ```jsonc
 {
-  "plugins": ["plugin-rtk_opencode-v2"]
+  "plugins": ["/home/me/dev/plugin-rtk_opencode-v2"]
 }
 ```
 
-Riavvia OpenCode dopo aver modificato la configurazione.
+Puoi anche installare direttamente da GitHub:
+
+```bash
+opencode plugin add github:brennoclins/plugin-rtk_opencode-v2
+```
+
+Lo script `prepare` compila automaticamente il progetto per questo tipo di
+installazione.
+
+Per l'uso offline, crea il tarball, estrailo e punta `plugins` alla directory
+estratta (contiene `package.json` e `dist/`):
+
+```bash
+pnpm pack
+tar -xzf plugin-rtk_opencode-v2-0.1.0.tgz
+```
 
 ## Come funziona
 
@@ -79,7 +240,9 @@ rtk rewrite <command>
 ```
 
 tramite `execFile`, senza shell, quindi il comando viene passato come un singolo
-argomento e non può iniettare sintassi shell nel processo del plugin.
+argomento e non può iniettare sintassi shell nel processo del plugin. Il plugin
+inoltre non esegue il comando riscritto: cambia solo il comando che OpenCode
+eseguirà.
 
 Un comando è considerato riscritto con successo quando `rtk rewrite` stampa uno
 stdout non vuoto. Attualmente RTK esce con codice `3` in caso di successo e `1`
@@ -122,8 +285,9 @@ saltati e `rtk rewrite` è idempotente.
 | `debug`            | `false`     | Scrive messaggi diagnostici su stderr. I comandi non vengono mai registrati. |
 | `maxCommandLength` | `8000`      | I comandi più lunghi di questo valore non vengono riscritti.            |
 
-Valori non validi delle opzioni tornano ai valori predefiniti invece di impedire
-l'avvio del plugin.
+Le opzioni possono essere impostate solo nella forma a oggetto mostrata sopra;
+la forma a stringa usa solo i valori predefiniti. Valori non validi tornano ai
+valori predefiniti invece di impedire l'avvio del plugin.
 
 Esempio con un percorso personalizzato del binario e l'hook shell abilitato:
 
@@ -145,10 +309,20 @@ Esempio con un percorso personalizzato del binario e l'hook shell abilitato:
 
 ## Risoluzione dei problemi
 
+**Il plugin non compare in `opencode plugin list`.** Verifica che la chiave sia
+`plugins` (plurale, sintassi V2), che il file sia in uno dei percorsi accettati e
+che tu abbia riavviato OpenCode. Esegui di nuovo `opencode plugin add` per
+controllare l'installazione.
+
+**Errore 404 o "package not found" durante l'installazione.** Verifica il nome
+esatto del pacchetto con `npm view plugin-rtk_opencode-v2 version`. Se non è
+pubblicata alcuna versione, usa l'installazione locale o via Git descritta sopra.
+
 **I comandi non vengono riscritti.** Verifica che `rtk rewrite "git status"`
 stampi un comando riscritto nello stesso ambiente in cui viene eseguito
 OpenCode. Controlla che il comando non abbia già il prefisso `rtk`, non sia più
-lungo di `maxCommandLength` e che `enabled` non sia `false`.
+lungo di `maxCommandLength` e che `enabled` non sia `false`. Attiva
+`debug: true` per vedere la diagnostica del plugin.
 
 **RTK non viene trovato.** Imposta `rtkPath` su un percorso assoluto. Sui sistemi
 in cui il processo OpenCode ha un `PATH` diverso, il binario potrebbe non essere
@@ -173,10 +347,12 @@ pnpm typecheck
 pnpm test
 pnpm coverage
 pnpm build
+pnpm pack
 ```
 
 La suite di test usa un binario RTK finto in `test/fixtures/fake-rtk.mjs`; il
-`rtk` reale non è necessario per eseguire i test.
+`rtk` reale non è necessario per eseguire i test. Lo script `prepare` esegue la
+build per le installazioni via Git.
 
 ## Compatibilità
 

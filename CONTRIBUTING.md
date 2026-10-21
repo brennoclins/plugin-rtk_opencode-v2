@@ -22,9 +22,31 @@ and a fake RTK binary; a real `rtk` installation is not required.
 
 - Keep changes focused and add tests for behavior changes.
 - Update `README.md` and `CHANGELOG.md` when user-visible behavior changes.
+- Keep the four READMEs in sync: `README.md` (pt-BR), `README.en.md`,
+  `README.it.md`, and `README.zh.md`.
 - Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` before
   opening a pull request.
 - Do not log commands or secrets. The plugin must remain silent by default.
+
+## Package and release
+
+`pnpm pack` builds `dist/` and creates the npm tarball. The published package
+contains only `dist/`, the README files, and the license/notice documents; tests,
+source files, and configuration stay out of the tarball.
+
+Releases are published from the `release.yml` workflow when a `v*` tag is
+pushed. The workflow runs lint, typecheck, tests, build, `npm pack --dry-run`,
+`npm publish --provenance`, and creates the GitHub release. The `NPM_TOKEN`
+repository secret is required.
+
+To test a local build as an OpenCode plugin, run `pnpm install && pnpm build`,
+then point a project configuration to the absolute package directory:
+
+```jsonc
+{
+  "plugins": ["/absolute/path/to/plugin-rtk_opencode-v2"]
+}
+```
 
 ## Developer Certificate of Origin
 
