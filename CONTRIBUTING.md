@@ -34,11 +34,27 @@ and a fake RTK binary; a real `rtk` installation is not required.
 contains only `dist/`, the README files, and the license/notice documents; tests,
 source files, and configuration stay out of the tarball.
 
+The first public release, `0.1.0`, is available on npm:
+<https://www.npmjs.com/package/plugin-rtk_opencode-v2>. It was published by the
+`release.yml` workflow with npm provenance, and the matching GitHub Release is
+`v0.1.0`.
+
 Releases are published from the `release.yml` workflow when a `v*` tag is
 pushed. The workflow runs lint, typecheck, tests, build, `npm pack --dry-run`,
-`npm publish --provenance`, and creates the GitHub release. The `NPM_TOKEN`
-repository secret is required, and the tag must match the `package.json`
-version (for example, tag `v0.1.0` for version `0.1.0`).
+`npm publish --access public --provenance`, and creates the GitHub release. The
+tag must match the `package.json` version (for example, tag `v0.1.0` for version
+`0.1.0`).
+
+The current workflow authenticates with the `NPM_TOKEN` repository secret: a
+granular npm token with publish access and bypass 2FA for automated publishing.
+Keep the token out of logs and never commit it. The workflow keeps
+`id-token: write` because provenance uses OIDC, but npm authentication still
+uses the token.
+
+Trusted Publishing (OIDC) is planned for 2026-11-01. After that migration, the
+workflow will publish without `NPM_TOKEN` (only `id-token: write`), and the
+token will be revoked. Until the migration is complete, keep the token-based
+flow as the supported release path.
 
 Publishing locally with `npm publish` is possible without provenance; the
 provenance attestation is generated only by the GitHub Actions workflow.

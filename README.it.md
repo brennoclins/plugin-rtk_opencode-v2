@@ -74,10 +74,20 @@ rtk --version
 
 ## Installazione
 
-Il plugin è un pacchetto npm caricato da OpenCode V2. **Non** è necessario
-eseguire `npm install` o `pnpm add`: OpenCode installa i pacchetti dichiarati
-nella configurazione usando Bun all'avvio e li memorizza nella cache in
-`~/.cache/opencode/node_modules/`.
+Il plugin è un pacchetto npm pubblicato e caricato da OpenCode V2. La versione
+attuale è `0.1.0`:
+
+```bash
+npm view plugin-rtk_opencode-v2 version
+# 0.1.0
+```
+
+**Non** è necessario eseguire `npm install` o `pnpm add`: OpenCode installa i
+pacchetti dichiarati nella configurazione usando Bun all'avvio e li memorizza
+nella cache in `~/.cache/opencode/node_modules/`.
+
+> La versione `0.0.0-stage` è un placeholder della prima pubblicazione; `latest`
+> punta a `0.1.0`, la versione installata da OpenCode.
 
 ### Opzione 1 — CLI (consigliata)
 
@@ -315,8 +325,9 @@ che tu abbia riavviato OpenCode. Esegui di nuovo `opencode plugin add` per
 controllare l'installazione.
 
 **Errore 404 o "package not found" durante l'installazione.** Verifica il nome
-esatto del pacchetto con `npm view plugin-rtk_opencode-v2 version`. Se non è
-pubblicata alcuna versione, usa l'installazione locale o via Git descritta sopra.
+esatto e la versione pubblicata con `npm view plugin-rtk_opencode-v2 version`
+(attesa: `0.1.0`) e controlla che il registry npm sia raggiungibile. Se il
+problema persiste, usa l'installazione locale o via Git descritta sopra.
 
 **I comandi non vengono riscritti.** Verifica che `rtk rewrite "git status"`
 stampi un comando riscritto nello stesso ambiente in cui viene eseguito
@@ -353,6 +364,13 @@ pnpm pack
 La suite di test usa un binario RTK finto in `test/fixtures/fake-rtk.mjs`; il
 `rtk` reale non è necessario per eseguire i test. Lo script `prepare` esegue la
 build per le installazioni via Git.
+
+Le release sono pubblicate dal workflow `release.yml` in GitHub Actions con npm
+provenance. La versione `0.1.0` e le successive sono elencate in
+<https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. Il flusso
+attuale usa un token npm granulare; la migrazione a Trusted Publishing (OIDC) è
+prevista per il 2026-11-01. Vedi
+[CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md).
 
 ## Compatibilità
 

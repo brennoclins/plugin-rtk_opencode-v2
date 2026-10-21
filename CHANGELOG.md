@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Documentation reviewed after the first public release: all four READMEs now
+  state that `0.1.0` is available on npm, document `0.0.0-stage` as the
+  first-publish placeholder, and remove the "no published version" fallback.
+- `CONTRIBUTING.md` and `SECURITY.md` now describe the token-based release flow
+  used for `0.1.0` and the planned migration to Trusted Publishing (OIDC) on
+  2026-11-01.
+
+## [0.1.0] - 2026-10-21
+
 ### Added
 
+- OpenCode V2 plugin that rewrites `bash` and `shell` tool commands through
+  `rtk rewrite` before execution.
+- Optional `ctx.shell.hook("create.before")` integration behind `useShellHook`.
+- Cached RTK availability probe with TTL and per-rewrite timeout.
+- Safe passthrough for missing binaries, timeouts, and empty output.
+- LRU cache for successful rewrites and skip rules for commands already using
+  RTK or exceeding `maxCommandLength`.
+- Configurable options with validation and defaults.
+- Test suite with a fake RTK binary, including timeout, stderr, and missing
+  binary scenarios.
+- GPL-3.0-or-later licensing, notices, and credits.
 - Multilingual README with Brazilian Portuguese as the default, plus English,
   Italian, and Simplified Chinese.
 - README badges for npm, CI, and license.
@@ -19,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `rtk gain`.
 - `prepare` script so Git-based installations build `dist/` automatically, and
   `prepublishOnly` to run lint, typecheck, and tests before publishing.
+- Published `plugin-rtk_opencode-v2@0.1.0` to npm with provenance and created
+  GitHub Release `v0.1.0`.
 
 ### Changed
 
@@ -50,19 +74,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local `npm publish` no longer fails with "Automatic provenance generation not
   supported" because provenance is requested by the release workflow instead of
   being forced in `publishConfig`.
-
-## [0.1.0] - 2026-10-21
-
-### Added
-
-- OpenCode V2 plugin that rewrites `bash` and `shell` tool commands through
-  `rtk rewrite` before execution.
-- Optional `ctx.shell.hook("create.before")` integration behind `useShellHook`.
-- Cached RTK availability probe with TTL and per-rewrite timeout.
-- Safe passthrough for missing binaries, timeouts, and empty output.
-- LRU cache for successful rewrites and skip rules for commands already using
-  RTK or exceeding `maxCommandLength`.
-- Configurable options with validation and defaults.
-- Test suite with a fake RTK binary, including timeout, stderr, and missing
-  binary scenarios.
-- GPL-3.0-or-later licensing, notices, and credits.

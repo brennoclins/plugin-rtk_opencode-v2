@@ -69,9 +69,17 @@ rtk --version
 
 ## 安装
 
-该插件是一个由 OpenCode V2 加载的 npm 包。你**不需要**运行 `npm install` 或 `pnpm add`：
-OpenCode 会在启动时使用 Bun 安装配置中声明的包，并缓存到
-`~/.cache/opencode/node_modules/`。
+该插件是一个已发布并由 OpenCode V2 加载的 npm 包。当前版本是 `0.1.0`：
+
+```bash
+npm view plugin-rtk_opencode-v2 version
+# 0.1.0
+```
+
+你**不需要**运行 `npm install` 或 `pnpm add`：OpenCode 会在启动时使用 Bun 安装配置中声明的包，
+并缓存到 `~/.cache/opencode/node_modules/`。
+
+> `0.0.0-stage` 是首次发布时创建的占位版本；`latest` 指向 `0.1.0`，OpenCode 安装的就是该版本。
 
 ### 方式 1 — CLI（推荐）
 
@@ -286,7 +294,8 @@ RTK 的可用性通过 `rtk --version` 探测，并缓存 `probeTtlMs` 时间。
 文件位于可接受的路径之一，并且已重启 OpenCode。再次运行 `opencode plugin add` 以检查安装。
 
 **安装时出现 404 或 "package not found"。** 用 `npm view plugin-rtk_opencode-v2 version`
-确认包名准确无误。如果没有已发布的版本，请使用上面描述的本地或 Git 安装方式。
+确认包名准确和已发布版本（应为 `0.1.0`），并检查 npm registry 是否可访问。如果问题仍然存在，
+请使用上面描述的本地或 Git 安装方式。
 
 **命令没有被重写。** 确认在 OpenCode 运行的同一环境中，`rtk rewrite "git status"`
 会输出重写后的命令。检查命令是否已带有 `rtk` 前缀、是否超过 `maxCommandLength`，以及 `enabled`
@@ -316,6 +325,12 @@ pnpm pack
 
 测试套件使用 `test/fixtures/fake-rtk.mjs` 中的假 RTK 二进制文件；运行测试不需要真实的 `rtk`。
 `prepare` 脚本会为基于 Git 的安装执行构建。
+
+发布由 GitHub Actions 中的 `release.yml` 工作流完成，并带有 npm provenance。
+`0.1.0` 及后续版本见
+<https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>。当前流程使用 npm
+granular token；计划于 2026-11-01 迁移到 Trusted Publishing（OIDC）。参见
+[CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md)。
 
 ## 兼容性
 

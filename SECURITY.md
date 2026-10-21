@@ -36,3 +36,18 @@ original command. A failure must never block or alter command execution.
 
 If you discover a case where a command is logged, shell-interpreted, or
 executed differently than the agent requested, treat it as a security issue.
+
+## Release integrity
+
+Published versions are built and published by the `release.yml` GitHub Actions
+workflow. The `0.1.0` release includes npm provenance
+(`slsa.dev/provenance/v1`) and is listed at
+<https://github.com/brennoclins/plugin-rtk_opencode-v2/releases/tag/v0.1.0>.
+
+Until the migration to npm Trusted Publishing (OIDC) planned for 2026-11-01, the
+workflow authenticates with the `NPM_TOKEN` repository secret: a granular npm
+token with publish access and bypass 2FA. The token used for the first release
+has broad package scope; revoking it is part of the OIDC migration. It is stored
+only in GitHub Actions secrets and is never part of the package. It must not be
+committed, printed, or included in reports. After the migration, releases will
+use short-lived OIDC credentials and the token will be revoked.

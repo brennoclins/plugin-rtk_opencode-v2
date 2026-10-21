@@ -74,10 +74,20 @@ rtk --version
 
 ## Instalação
 
-O plugin é um pacote npm carregado pelo OpenCode V2. Você **não precisa**
-executar `npm install` nem `pnpm add`: o OpenCode instala os pacotes declarados
-na configuração usando Bun no startup e guarda o cache em
+O plugin é um pacote npm publicado e carregado pelo OpenCode V2. A versão atual
+é `0.1.0`:
+
+```bash
+npm view plugin-rtk_opencode-v2 version
+# 0.1.0
+```
+
+Você **não precisa** executar `npm install` nem `pnpm add`: o OpenCode instala
+os pacotes declarados na configuração usando Bun no startup e guarda o cache em
 `~/.cache/opencode/node_modules/`.
+
+> A versão `0.0.0-stage` é um placeholder da primeira publicação; o `latest`
+> aponta para `0.1.0` e é essa versão que o OpenCode instala.
 
 ### Opção 1 — CLI (recomendado)
 
@@ -312,8 +322,9 @@ Exemplo com caminho personalizado do binário e o hook de shell habilitado:
 e que você reiniciou o OpenCode. Rode `opencode plugin add` novamente para
 verificar a instalação.
 
-**Erro 404 ou "package not found" ao instalar.** Confirme o nome exato do pacote
-com `npm view plugin-rtk_opencode-v2 version`. Se não houver versão publicada,
+**Erro 404 ou "package not found" ao instalar.** Confirme o nome exato e a
+versão publicada com `npm view plugin-rtk_opencode-v2 version` (esperado:
+`0.1.0`) e verifique se o registry npm está acessível. Se o problema persistir,
 use a instalação local ou via Git descrita acima.
 
 **Os comandos não são reescritos.** Confirme que `rtk rewrite "git status"`
@@ -351,6 +362,13 @@ pnpm pack
 A suíte de testes usa um binário RTK falso em `test/fixtures/fake-rtk.mjs`; o
 `rtk` real não é necessário para executar os testes. O script `prepare` executa
 o build em instalações via Git.
+
+As releases são publicadas pelo workflow `release.yml` no GitHub Actions com npm
+provenance. A versão `0.1.0` e as seguintes ficam em
+<https://github.com/brennoclins/plugin-rtk_opencode-v2/releases>. O fluxo atual
+usa um token granular do npm; a migração para Trusted Publishing (OIDC) está
+planejada para 2026-11-01. Consulte
+[CONTRIBUTING.md](https://github.com/brennoclins/plugin-rtk_opencode-v2/blob/main/CONTRIBUTING.md).
 
 ## Compatibilidade
 
